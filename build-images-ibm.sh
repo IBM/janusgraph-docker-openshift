@@ -30,7 +30,7 @@ tag="1.0.1"
 
 REVISION="$(git rev-parse --short HEAD)"
 CREATED="$(date -u +”%Y-%m-%dT%H:%M:%SZ”)"
-IMAGE_NAME="docker.io/sanjeevghimire/janusgraph"
+IMAGE_NAME="docker.io/sanjeevghimire/janusgraph" # change this to include your JanusGraph image.
 
 echo "REVISION: ${REVISION}"
 echo "CREATED: ${CREATED}"
