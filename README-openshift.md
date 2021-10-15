@@ -13,7 +13,7 @@ To modify the Dockerfile from the JanusGraph project, first fork the [JanusGraph
 
 ## Change the file and group ownership
 
-[Change the file and group ownership](https://developer.ibm.com/learningpaths/universal-application-image/design-universal-image/#6-set-group-ownership-and-file-permission) to root (0) for related folders. The following modifications apply to the `Dockerfile`:
+[Change the file and group ownership](https://developer.ibm.com/learningpaths/universal-application-image/design-universal-image/#3-set-group-ownership-and-file-permission) to root (0) for related folders. The following modifications apply to the `Dockerfile`:
 
 ```bash
 chgrp -R 1001:0 ${JANUS_HOME} ${JANUS_INITDB_DIR} ${JANUS_CONFIG_DIR} ${JANUS_DATA_DIR} && \
