@@ -1,13 +1,20 @@
-# Modfify Existing JansuGraph Docker to work with OpenShift
+# Build a new JanusGraph Docker image that works with OpenShift as well as Kubernetes
 
-The JanusGraph Docker image from the official repo deploys fine into Kubernetes but runs into errors when deployed into OpenShift. There are few things that need to be modified before you can deploy:
+The Docker image for JanusGraph from the project's official repo deploys successfully into Kubernetes but runs into errors when deployed into OpenShift. There are few changes that need to be made to the Dockerfile to build an image can be deployed successfully in both Kubernetes and OpenShift. This document explains what to do.
+
+## IBM Developer articles
+
+This process incorporates best practices from [Design, build, and deploy universal application images](https://developer.ibm.com/learningpaths/universal-application-image/), specifically [Best practices for designing a universal application image](https://developer.ibm.com/learningpaths/universal-application-image/design-universal-image/), which discusses practices applied to Dockerfiles. Consult those articles for an explanation of why these changes to the JanusGraph Dockerfile are necessary.
+
+This universal JanusGraph image is used in the series [Get started using Kubernetes Operators](https://developer.ibm.com/learningpaths/kubernetes-operators/), specifically the "Develop and deploy an advanced Kubernetes operator for JanusGraph" articles that begin with [Develop and deploy a Level I JanusGraph Operator using BerkeleyDB](https://developer.ibm.com/learningpaths/kubernetes-operators/develop-deploy-advanced-operator-janusgraph/develop-janusgraph-operator-berkeleydb/). Check those out to learn how to develop a Kubernetes operator for JanusGraph (that also runs in OpenShift) and to see how it uses the JanusGraph image built with this Dockerfile.
 
 ## Fork the repo
-Fork the repo `https://github.com/JanusGraph/janusgraph-docker`
+To modify the Dockerfile from the JanusGraph project, first fork the [JanusGraph Docker repo](https://github.com/JanusGraph/janusgraph-docker).
 
 ## Change the file and group ownership
 
-[Change the file and group ownership](https://developer.ibm.com/learningpaths/universal-application-image/design-universal-image/#6-set-group-ownership-and-file-permission) to root (0) for related folders. The following modifications apply to the `Dockerfile`:
+[Change the file and group ownership](https://developer.ibm.com/learningpaths/universal-application-image/design-universal-image/#3-set-group-ownership-and-file-permission) to root (0) for related folders. The following modifications apply to the `Dockerfile`:
+
 ```bash
 chgrp -R 1001:0 ${JANUS_HOME} ${JANUS_INITDB_DIR} ${JANUS_CONFIG_DIR} ${JANUS_DATA_DIR} && \
 chmod -R g+w ${JANUS_HOME} ${JANUS_INITDB_DIR} ${JANUS_CONFIG_DIR} ${JANUS_DATA_DIR}
@@ -17,12 +24,12 @@ RUN chmod u+x /opt/janusgraph/conf/remote.yaml
 ```
 
 
-## Configure Janusgraph to use with Cassandra ONLY!
+## Configure JanusGraph to use Cassandra instead of BerkeleyDB for persistence
 
-> NOTE: For BerkeleyDB storage you don't need to change the `JANUS_PROPS_TEMPLATE` and create a `janusgraph-cql-server.properties`. The below instruction is only for use with `Cassandra`
+> NOTE: For BerkeleyDB storage you don't need to change the `JANUS_PROPS_TEMPLATE` variable and create a `janusgraph-cql-server.properties` file. The instructions below are ONLY for use with Cassandra.
 
-* Change the `JANUS_PROPS_TEMPLATE` value to `cql` as you will be using Cassandra as the back end.
-* Create `janusgraph-cql-server.properties` in the latest version directory (which in this case is `0.5`) and add the following properties:
+* Change the `JANUS_PROPS_TEMPLATE` property value to `cql`. This specifies to use Cassandra as the back end database.
+* Create a `janusgraph-cql-server.properties` file in the latest version directory (which in this case is `0.5`) and add the following properties:
 
 ```bash
 gremlin.graph=org.janusgraph.core.JanusGraphFactory
@@ -42,9 +49,9 @@ index.search.backend=lucene
 index.search.directory=/var/lib/janusgraph/index
 ```
 
-These are properties that allows JanusGraph to talk to Cassandra as Cassandra will be storing the data in a distributed fashion.
+These properties configure JanusGraph to connect to Cassandra and use it to store its data. Whereas the default database, BerkeleyDB, runs in a single container, Cassandra runs in a cluster of containers.
 
-After these changes, make sure to update `janusgraph-cql-server.properties` with the `cluster-ip` of the Cassandra service. Update `storage.hostname` with the `Cluster-IP`.
+Also, update the `storage.hostname` property in the `janusgraph-cql-server.properties` file with the IP address for the Cassandra service. The IP address for Cassandra running in a Kubernetes cluster is shown as the Kubernetes service's `Cluster-IP` property. You can find that property in an OpenShift cluster by running the `oc get svc` command, as shown here:
 
 ![Cluster IP](cluster-ip.png)
 
